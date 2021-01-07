@@ -1,4 +1,4 @@
-# DIP_seminar_week1
+# DIP_Affine_Transform
 2019 MMI Lab. DIP 세미나 
 Image Affine Transform, Color Transform – RGB to HIS, and Spatial Domain Filtering
 
