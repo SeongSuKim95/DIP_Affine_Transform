@@ -233,26 +233,16 @@ def rotatecoordination(x,y,theta):
     return x*cos-y*sin, x*sin+y*cos
 
 def rotate_image(img,theta):
-    # Dimensions of source image. Note that scipy.misc.imread loads
-    # images in row-major order, so src.shape gives (height, width).
+
     img_height, img_width = img.shape
-    # Rotated positions of the corners of the source image.
     corner_x, corner_y = rotatecoordination([0,img_width,img_width,0],[0,0,img_height,img_height],theta)
-
     destination_width, destination_height = (int(np.ceil(c.max()-c.min())) for c in (corner_x, corner_y))
-
     destination_x, destination_y = np.meshgrid(np.arange(destination_width), np.arange(destination_height))
-
     sx, sy = rotatecoordination(destination_x + corner_x.min(), destination_y + corner_y.min(), -theta)
-
     sx, sy = sx.round().astype(int), sy.round().astype(int)
-
     valid = (0 <= sx) & (sx < img_width) & (0 <= sy) & (sy < img_height)
-    # Create destination image.
     transformed=np.zeros(shape=(destination_height, destination_width), dtype=img.dtype)
-    # Copy valid coordinates from source image.
     transformed[destination_y[valid], destination_x[valid]] = img[sy[valid], sx[valid]]
-    # Fill invalid coordinates.
     transformed[destination_y[~valid], destination_x[~valid]]=0
 
     return transformed
