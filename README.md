@@ -3,6 +3,7 @@
 
 * Intensity Transformation
   * Negative transformation
+    ![Negative_transform](https://user-images.githubusercontent.com/62092317/108153340-50979100-711e-11eb-9fa6-cce9bf82dcfe.png)
      ```python
      def NegativeTransformation(img):
          negative_transform = np.array(255-img,dtype='uint8')
@@ -17,6 +18,7 @@
      ```
      
   * Log transformation
+    ![Log_transform](https://user-images.githubusercontent.com/62092317/108153338-4f666400-711e-11eb-933c-b42ee5301e54.PNG)
       ```python
       def logtransformation(img):
           c=255/np.log(256)/np.log(8)
@@ -26,6 +28,7 @@
       ```
   
   * ContrastStretching
+    ![Contrast_Stretching](https://user-images.githubusercontent.com/62092317/108153357-58efcc00-711e-11eb-87ba-51a03ac23905.png)
       ```python
       def ContrastStretching(img):
           original = np.array(img)
@@ -37,7 +40,7 @@
           return result
       ```
   * Bitslicing
-  
+    ![Bit_Slicing](https://user-images.githubusercontent.com/62092317/108153354-57be9f00-711e-11eb-8140-8e45e45aa0f9.png)
       ```python
       def bitslicing(img):
 
@@ -65,7 +68,7 @@
       ``
 
 * Affine Transform
-  
+  ![Scaling_Interpolation](https://user-images.githubusercontent.com/62092317/108153352-57260880-711e-11eb-9cd3-52dfdef08761.png)
   * Bilinear interpolation
   ```python
   def backward_bilinear_x(img,c):
@@ -188,7 +191,7 @@
   ``` 
   
   * Rotation
-  
+  ![Rotation_transform](https://user-images.githubusercontent.com/62092317/108153350-55f4db80-711e-11eb-8446-418044dc1433.png)
   ```python
   def rotate_image(img,theta):
 
@@ -207,7 +210,7 @@
   ```
   
 * Color Transform
-  
+  ![RGB_to_HSI](https://user-images.githubusercontent.com/62092317/108153344-52615480-711e-11eb-92ce-e75d56e27ddd.png)
   * RGB_to_HIS
    ```python 
    def RGB_to_HIS(img):
@@ -234,7 +237,7 @@
         return result
    ```
   * RGB_to_Ycbcr
-   
+   ![RGB_to_Ycbcr](https://user-images.githubusercontent.com/62092317/108153346-542b1800-711e-11eb-8776-01c3af86fd33.png)
    ```python
    def RGB_to_Ycbcr(image):
         img=(image.astype(float)/255)
@@ -276,7 +279,7 @@
    ```
    
    * RGB_to_CMY
-
+   ![RGB_to_CMY](https://user-images.githubusercontent.com/62092317/108153343-51302780-711e-11eb-8dc4-ea0e324a3f89.png)
    ```python
    def RGB_to_CMY(image):
         img = (image.astype(float) / 255)
