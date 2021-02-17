@@ -1,751 +1,298 @@
-# DIP_various_filter
-## This repository is python code of "Digital Image Processing, Rafael C.Gonzalez, 3rd edition" Chapter 3 & 4
+# DIP_AffineTransform & Color Transform
+## This repository is python code of "Digital Image Processing, Rafael C.Gonzalez, 3rd edition"
 
-* Spatial domain filtering
-  * 2D Convolution
+* Intensity Transformation
+  * Negative transformation
      ```python
-     def Spatial_convolution(img, filter):
-         m, n = filter.shape
-         if (m == n):
-             y, x = img.shape
-             #y = y - m + 1
-             #x = x - m + 1
-             zp = int((m - 1) / 2)
-             result = np.zeros((y, x))
-             image_zero_padding = np.zeros((y+n-1,x+m-1))
-             for i in range(y):
-                 for j in range(x):
-                     image_zero_padding[i+zp][j+zp] = img[i][j]
-
-             for i in range(y):
-                 for j in range(x):
-                     result[i][j] = np.sum(image_zero_padding[i:i+m,j:j+n] * filter)
-                     if result[i][j] <0:
-                       result[i][j] = 0
-             result = np.array(result,dtype=np.uint8)
-
-     return result
+     def NegativeTransformation(img):
+         negative_transform = np.array(255-img,dtype='uint8')
+         return negative_transform
      ```
-  * Spatial filtering 
-    * Box filter (Smoothing linear filter) 
-      * Original image
-  
-      ![original](https://user-images.githubusercontent.com/62092317/106533707-01eed200-6536-11eb-9791-48681df419d2.PNG)
-      * Low pass filter
-      ![low_box](https://user-images.githubusercontent.com/62092317/106533689-fdc2b480-6535-11eb-9bfd-5ed3490adc85.PNG)
-      ```python
-      def S_smoothing_linear(img,c):
-
-         smoothing_filter = np.ones((c,c))*(1/c**2)
-         result = Spatial_convolution(img,smoothing_filter).astype(np.uint8)
-
-         return  result
-      
-      def S_weighted_average(img):
-
-         weighted_filter = np.array([[1,2,1],[2,4,2],[1,2,1]])*(1/16)
-         result = Spatial_convolution(img,weighted_filter)
-         result = np.array(result,dtype=np.uint8)
-         
-         return  result
+  * Gamma transformation
+     ```python
+      def GammaTransformation(img,gamma):
+          c=1
+          Gamma_transform = c*np.array(255*(img/255)**gamma,dtype='uint8')
+          return Gamma_transform
+     ```
      
-      def S_Hpf(img,c):
-      
-         identity = np.zeros((c,c))
-         center = int((c-1)/2)
-         identity[center][center] = 1
-         high_pass_filter = identity - np.ones((c,c))*(1/c**2)
-         result = Spatial_convolution(img, high_pass_filter)
-
-         result1 = np.array(result,dtype=np.uint8)
-         result = logtransformation(result1)
-         return result
-     ```
-   * Laplacian filter
-      * Before Normalizing
-      ![Laplacian](https://user-images.githubusercontent.com/62092317/106533685-fd2a1e00-6535-11eb-926c-bd97658ffbbe.PNG)
-
-      * After Nomalizing
-
-      * Sharpening with normal laplacian filter
-      ![Sharpening1](https://user-images.githubusercontent.com/62092317/106533713-02876880-6536-11eb-9ad1-77bbd3a69897.PNG)
-
-      * Sharpening with diagonal laplacian filter
-      ![Sharpening2](https://user-images.githubusercontent.com/62092317/106533716-031fff00-6536-11eb-854c-b817cba66683.PNG)
-
-      * Comparison between normal & diagonal laplacian filter
-      ![Sharpening](https://user-images.githubusercontent.com/62092317/106533709-01eed200-6536-11eb-9e4f-53dca2d3b200.PNG)
+  * Log transformation
       ```python
-      def S_Laplacian_filter(img):
-          laplacian = np.array([[0,1,0],[1,-4,1],[0,1,0]])
-          laplacian_diagonal = np.array([[1,1,1],[1,-8,1],[1,1,1]])
-          result = Spatial_convolution(img,laplacian_diagonal)
+      def logtransformation(img):
+          c=255/np.log(256)/np.log(8)
+          log_transform = c*np.log(1+img)/np.log(8)
+          result = np.array(log_transform, dtype=np.uint8)
           return result
       ```
-    * Sobel operator
-      ![Sobel](https://user-images.githubusercontent.com/62092317/106533719-03b89580-6536-11eb-96e5-c9ccb0a80ffb.PNG)
-      ![Sobel_vertical_horizontal](https://user-images.githubusercontent.com/62092317/106533722-04512c00-6536-11eb-9b3b-a70fab8fe350.PNG)
-      ```python
-      def S_Sobel_horizontal(img):
-          sobel_h = np.array([[-1,-2,-1],[0,0,0],[1,2,1]])
-          result = Spatial_convolution(img,sobel_h)
-          min = np.amin(result)
-          result = result -min
-          max = np.amax(result)
-          result = (255 / max) * result
-          result = np.array(result, dtype=np.uint8)
-          
-          return  result
-
-      def S_Sobel_vertical(img):
-
-         sobel_v = np.array([[-1,0,1],[-2,0,2],[-1,0,1]])
-         result = Spatial_convolution(img,sobel_v)
-         min = np.amin(result)
-         result = result -min
-         max = np.amax(result)
-         result = (255 / max) * result
-         result = np.array(result, dtype=np.uint8)
-         
-         return result
-
-      ```
-    
-    * Unsharp masking and highboost filtering
-      * Unsharp masking
-      ![Unsharpmasking](https://user-images.githubusercontent.com/62092317/106533724-04e9c280-6536-11eb-8fba-da6128d47ed9.PNG)
-      ```python
-      def S_Unsharp_masking(img,c,a,k):
-
-          a,b = img.shape
-          #hpf_image = S_Hpf(img,c)
-          lpf_image = S_Gaussian_LPF(img,c,a)
-          mask_image = np.empty_like(img)
-          mask_image = np.array(mask_image,dtype=float)
-          img = np.array(img,dtype=float)
-          lpf_image = np.array(lpf_image,dtype=float)
-          for i in range(a):
-              for j in range(b):
-                  mask_image[i][j] = img[i][j] - lpf_image[i][j]
-          result = np.empty_like(img)
-          result = np.array(result, dtype=float)
-          for i in range(a):
-              for j in range(b):
-                  result[i][j] = img[i][j] + k*mask_image[i][j]
-          min = np.amin(result)
-          result = result - min
-          max = np.amax(result)
-          result = (255 / max) * result
-          result = np.array(result, dtype=np.uint8)
-
-          return result
-      ```
-      * High boost by Unsharpmasking + Sobel filter
-      ![Unsharpmasking+Sobel](https://user-images.githubusercontent.com/62092317/106533728-05825900-6536-11eb-9f22-4e46e9beeea5.PNG)
-
-* Frequency domain filtering
-  ```python
-  def Fourier_transform(img):
-    FT_transformed = np.fft.fft2(img)
-    fft_shift = np.fft.fftshift(FT_transformed)
-    fft_shift = np.asarray(fft_shift)
-
-    magnitude_spectrum = 20*np.log(np.abs(fft_shift))/np.log(5)
-    magnitude_spectrum = np.asarray(magnitude_spectrum,dtype=np.uint8)
-
-    return magnitude_spectrum
   
-  ``` 
-  * Ideal low&high-pass filter
-    * Low pass filter
-    ![Frequency_LPF](https://user-images.githubusercontent.com/62092317/106533676-fa2f2d80-6535-11eb-9a3d-cdd4fec60411.PNG)
-    ```python
-    def F_LPF_round(img,d):
-    
-        Lowpassfilter = np.zeros_like(img)
-        a,b = Lowpassfilter.shape
-        for x in range(0,b):
-            for y in range(0,a):
-                if int(sqrt((x-b/2)**2 + (y-a/2)**2)) <= d:
-                    Lowpassfilter[y,x] = 1
+  * ContrastStretching
+      ```python
+      def ContrastStretching(img):
+          original = np.array(img)
+          min = np.min(original)
+          max = np.max(original)
+          PiecewiseLinear = np.zeros(256, dtype=np.uint8)
+          PiecewiseLinear[min:max+1] = np.linspace(0, 255, max-min+1,True,dtype=np.uint8)
+          result = np.array(PiecewiseLinear[original],dtype=np.uint8)
+          return result
+      ```
+  * Bitslicing
+  
+      ```python
+      def bitslicing(img):
 
-        Lowpassfilter = np.array(Lowpassfilter,dtype= float)
-        img = Fourier_transform(img)
-        result = img * Lowpassfilter
-        result1 = np.fft.ifft2(result)
-        result2 = np.absolute(result1)
+          lst = []
 
-        max = np.amax(result2)
-        result3 = (255 / max) * result2
-        result4 = np.array(result3, dtype=np.uint8)
-        # xx = np.linspace(0,img.shape[1]-1,img.shape[1])
-        # yy = np.linspace(0,img.shape[0]-1,img.shape[0])
-        #
-        # xxx,yyy =np.meshgrid(xx,yy)
-        # fig = plt.figure()
-        # ax = plt.axes(projection ='3d')
-        # ax.plot_surface(yyy,xxx,Lowpassfilter)
-        # plt.show()
+          for i in range(img.shape[0]):
+              for j in range(img.shape[1]):
+                  lst.append(np.binary_repr(img[i][j], width=8))
 
-        return result4
-        
-    def F_LPF_square(img,c):
+          eight_bit_img = (np.array([int(i[0]) for i in lst], dtype=np.uint8) * 128).reshape(img.shape[0], img.shape[1])
+          seven_bit_img = (np.array([int(i[1]) for i in lst], dtype=np.uint8) * 64).reshape(img.shape[0], img.shape[1])
+          six_bit_img = (np.array([int(i[2]) for i in lst], dtype=np.uint8) * 32).reshape(img.shape[0], img.shape[1])
+          five_bit_img = (np.array([int(i[3]) for i in lst], dtype=np.uint8) * 16).reshape(img.shape[0], img.shape[1])
+          four_bit_img = (np.array([int(i[4]) for i in lst], dtype=np.uint8) * 8).reshape(img.shape[0], img.shape[1])
+          three_bit_img = (np.array([int(i[5]) for i in lst], dtype=np.uint8) * 4).reshape(img.shape[0], img.shape[1])
+          two_bit_img = (np.array([int(i[6]) for i in lst], dtype=np.uint8) * 2).reshape(img.shape[0], img.shape[1])
+          one_bit_img = (np.array([int(i[7]) for i in lst], dtype=np.uint8) * 1).reshape(img.shape[0], img.shape[1])
 
-        Lowpassfilter = np.zeros_like(img)
-        a,b = Lowpassfilter.shape
-        if (a%2) == 0:
-            if (b%2) == 0:
-                Lowpassfilter[int(b/2)-c:int(b/2)+1+c,int(a/2)-c:int(a/2)+1+c] = 1
-            elif (b%2) == 1:
-                Lowpassfilter[int((b-1)/2)-c:int((b-1)/2)+2+c, int(a/2)-c:int(a/2)+1+c] = 1
-        elif (a%2) == 1:
-            if (b%2) == 0:
-                Lowpassfilter[int(b/2)-c:int(b/2)+1+c,int((a-1)/2)-c:int((a-1)/2)+2+c]=1
-            elif (b%2) ==1:
-                Lowpassfilter[int((b-1)/2)-c:int((b-1)/2)+2+c,int((a-1)/2)-c:int((a-1)/2)+2+c] = 1
+          finalr = cv2.hconcat([eight_bit_img, seven_bit_img, six_bit_img, five_bit_img])
+          finalv = cv2.hconcat([four_bit_img, three_bit_img, two_bit_img, one_bit_img])
+          final78 = eight_bit_img + seven_bit_img
+          final = cv2.hconcat([finalr, finalv])
 
-        Lowpassfilter = np.array(Lowpassfilter,dtype=float)
-        img = Fourier_transform(img)
-        result = img*Lowpassfilter
-        result1 = np.fft.ifft2(result)
-        result2 = np.absolute(result1)
-        max = np.amax(result2)
-        result3 = (255/max)*result2
-        result4 = np.array(result3,dtype=np.uint8)
+          return final
+      ``
 
-        return result4
-    ```
-    * High pass filter
-    ![Frequency_HPF](https://user-images.githubusercontent.com/62092317/106533749-09ae7680-6536-11eb-8344-b3f9b46461f0.PNG)
-    ```python
-    def F_HPF_round(img,d):
-    Highpassfilter = np.ones_like(img)
-    a,b = Highpassfilter.shape
-    for x in range(0,b):
-        for y in range(0,a):
-            if int(sqrt((x-b/2)**2 + (y-a/2)**2)) <= d:
-                Highpassfilter[y,x] = 0
-
-    Highpassfilter = np.array(Highpassfilter,dtype= float)
-    img = Fourier_transform(img)
-    result = img * Highpassfilter
-    result1 = np.fft.ifft2(result)
-    result2 = np.absolute(result1)
-    max = np.amax(result2)
-    result3 = (255 / max) * result2
-    result4 = np.array(result3, dtype=np.uint8)
-
-    return result4
-
-    def F_HPF_square(img,c):
-        Highpassfilter = np.ones_like(img)
-        a, b = Highpassfilter.shape
-        if (a % 2) == 0:
-            if (b % 2) == 0:
-                Highpassfilter[int(b / 2) - c:int(b / 2) + 1 + c, int(a / 2) - c:int(a / 2) + 1 + c] = 0
-            elif (b % 2) == 1:
-                Highpassfilter[int((b - 1) / 2) - c:int((b - 1) / 2) + 2 + c, int(a / 2) - c:int(a / 2) + 1 + c] = 0
-        elif (a % 2) == 1:
-            if (b % 2) == 0:
-                Highpassfilter[int(b / 2) - c:int(b / 2) + 1 + c, int((a - 1) / 2) - c:int((a - 1) / 2) + 2 + c] = 0
-            elif (b % 2) == 1:
-                Highpassfilter[int((b - 1) / 2) - c:int((b - 1) / 2) + 2 + c, int((a - 1) / 2) - c:int((a - 1) / 2) + 2 + c] = 0
-
-        Highpassfilter = np.array(Highpassfilter, dtype=float)
-        img = Fourier_transform(img)
-        result = img * Highpassfilter
-        result1 = np.fft.ifft2(result)
-        result2 = np.absolute(result1)
-        max = np.amax(result2)
-        result3 = (255 / max) * result2
-        result4 = np.array(result3, dtype=np.uint8)
-        return result4
-    ```
-
-  * Gaussian low&high-pass filter
-    * Low pass filter
-    ![Gaussian_LPF](https://user-images.githubusercontent.com/62092317/106533683-fbf8f100-6535-11eb-971b-92a339371d4a.PNG)
-    ```python
-    def F_Gaussian_LPF(img,sigma):
-
-        a,b = img.shape
-
-        Gaussian_height = [exp(-(z-int(a/2))*(z-int(a/2)) / (2 * sigma * sigma))  for z in range(0, a)]
-        Gaussian_width = [exp(-(z-int(b/2))*(z-int(b/2)) / (2 * sigma * sigma))  for z in range(0, b)]
-
-        Gaussian_filter = np.outer(Gaussian_height, Gaussian_width)
-        Gaussian_filter = np.array(Gaussian_filter,dtype=np.float)/Gaussian_filter.sum(dtype=np.float)
-        img = Fourier_transform(img)
-        result = img*Gaussian_filter
-        result1 = np.fft.ifft2(result)
-        result2 = np.absolute(result1)
-        max = np.amax(result2)
-        result3 = (255/max)*result2
-        result4 = np.array(result3,dtype=np.uint8)
-
-        # print(img.shape)
-        # xx = np.linspace(0,img.shape[1]-1,img.shape[1])
-        # yy = np.linspace(0,img.shape[0]-1,img.shape[0])
-        # 
-        # xxx,yyy =np.meshgrid(xx,yy)
-        # fig = plt.figure()
-        # ax = plt.axes(projection ='3d')
-        # ax.plot_surface(yyy,xxx,Gaussian_filter)
-
-        #plt.show()
-        return result4
-    ```
-    * High pass filter
-    ![Gaussian_HPF](https://user-images.githubusercontent.com/62092317/106533680-fbf8f100-6535-11eb-96e5-33c2bdffba38.PNG)
-    ```python
-    def F_Gaussian_HPF(img,sigma):
-        from numpy import pi, exp, sqrt
-        a, b = img.shape
-
-        Gaussian_height = [(exp(-(z-int(a/2))*(z-int(a/2))/(2*sigma*sigma))) for z in range(0, a)]
-        Gaussian_width = [(exp(-(z-int(b/2))*(z-int(b/2))/(2*sigma*sigma))) for z in range(0, b)]
-
-        Gaussian_filter = np.outer(Gaussian_height, Gaussian_width)
-        Gaussian_filter = np.array(Gaussian_filter, dtype=np.float)
-        Gaussian_filter = np.array(1-Gaussian_filter,dtype=np.float)
-        img = Fourier_transform(img)
-        result = img * (Gaussian_filter)
-        result1 = np.fft.ifft2(result)
-        result2 = np.absolute(result1)
-        max = np.amax(result2)
-        result3 = (255 / max) * result2
-        result4 = np.array(result3, dtype=np.uint8)
-        # print(img.shape)
-        # 
-        # xx = np.linspace(0,img.shape[1]-1,img.shape[1])
-        # yy = np.linspace(0,img.shape[0]-1,img.shape[0])
-        # 
-        # xxx,yyy =np.meshgrid(xx,yy)
-        # fig = plt.figure()
-        # ax = plt.axes(projection ='3d')
-        # ax.plot_surface(yyy,xxx,Gaussian_filter)
-        # plt.show()
-
-        return result4
-    ```
-  * Butterworth low&high-pass filter
-   * Low pass filter
-   ```python
-   def Butterworth_LPF(img,d,order):
-
-       Lowpassfilter = np.zeros_like(img)
-       Lowpassfilter = np.array(Lowpassfilter,dtype=float)
-       a,b = Lowpassfilter.shape
-       for x in range(0,b):
-           for y in range(0,a):
-                   distance = sqrt((x-b/2)**2 + (y-a/2)**2)
-                   Lowpassfilter[y,x] = 1/(1+(distance/d)**(2*order))
-
-       img = Fourier_transform(img)
-       result = img * Lowpassfilter
-       result1 = np.fft.ifft2(result)
-       result2 = np.absolute(result1)
-       max = np.amax(result2)
-       result3 = (255 / max) * result2
-       result4 = np.array(result3, dtype=np.uint8)
-
-       # xx = np.linspace(0,img.shape[1]-1,img.shape[1])
-       # yy = np.linspace(0,img.shape[0]-1,img.shape[0])
-       # 
-       # xxx,yyy =np.meshgrid(xx,yy)
-       # fig = plt.figure()
-       # ax = plt.axes(projection ='3d')
-       # ax.plot_surface(yyy,xxx,Lowpassfilter)
-       # plt.show()
-       return result4
-   ```
-   * High pass filter
-   ![ButterWorth_HPF](https://user-images.githubusercontent.com/62092317/106533748-0915e000-6536-11eb-8e0b-2797eef4dbbf.PNG)
-   ```python
-   def Butterworth_HPF(img,d,order):
-       Highpassfilter = np.zeros_like(img)
-       Highpassfilter = np.array(Highpassfilter,dtype=float)
-       a,b = Highpassfilter.shape
-       for x in range(0,b):
-           for y in range(0,a):
-               distance = sqrt((x-b/2)**2+(y-a/2)**2)
-               if distance==0 :
-                   Highpassfilter[y,x] = 0
-               else :
-                   Highpassfilter[y,x] = 1/(1+(d/distance)**(2*order))
-
-       img = Fourier_transform(img)
-       result = img * Highpassfilter
-       result1 = np.fft.ifft2(result)
-       result2 = np.absolute(result1)
-       max = np.amax(result2)
-       result3 = (255 / max) * result2
-       result4 = np.array(result3, dtype=np.uint8)
-       # print(img.shape)
-       # xx = np.linspace(0,img.shape[1]-1,img.shape[1])
-       # yy = np.linspace(0,img.shape[0]-1,img.shape[0])
-       # 
-       # xxx,yyy =np.meshgrid(xx,yy)
-       # fig = plt.figure()
-       # ax = plt.axes(projection ='3d')
-       # ax.plot_surface(yyy,xxx,Highpassfilter)
-       # plt.show()
-
-       return result4
-   ```
-  * Notch filter
-    * Frequency components of original image & Required notch filter
-    ![Notch_filter](https://user-images.githubusercontent.com/62092317/106533699-00250e80-6536-11eb-950e-bc9c26954890.PNG)
-    * Filtered image
-    ![Notch_filter_1](https://user-images.githubusercontent.com/62092317/106533701-00bda500-6536-11eb-9142-656d0226afca.PNG)
-    * Noise of the image ( Extracted by Inverse notch filter)
-    ![Notch_filter_2](https://user-images.githubusercontent.com/62092317/106533704-01563b80-6536-11eb-960a-8a72774c82ff.PNG)
-    
-    ```python
-    def Notch_round_filter(img,d):
-        a, b = img.shape
-        Notchfilter = np.ones_like(img)
-
-        for x in range(0,b):
-            for y in range(0,a):
-                if (sqrt((x-111)**2 + (y-81)**2)) <= d or (sqrt((x-55)**2 + (y-85)**2)) <= d or (sqrt((x-57)**2 + (y-165)**2)) <= d or (sqrt((x-113)**2 + (y-161)**2)) <= d or (sqrt((x-55)**2 + (y-44)**2)) <= d or (sqrt((x-111)**2 + (y-40)**2)) <= d or (sqrt((x-57)**2 + (y-206)**2)) <= d or(sqrt((x-113)**2 + (y-202)**2)) <= d :
-                 Notchfilter[y,x] = 0
-
-        Notchfilter = np.array(Notchfilter,dtype= float)
-        img = Fourier_transform(img)
-        result = img * Notchfilter
-        result1 = np.fft.ifft2(result)
-        result2 = np.absolute(result1)
-        max = np.amax(result2)
-        result3 = (255 / max) * result2
-        result4 = np.array(result3, dtype=np.uint8)
-
-        # xx = np.linspace(0,img.shape[1]-1,img.shape[1])
-        # yy = np.linspace(0,img.shape[0]-1,img.shape[0])
-        # 
-        # xxx,yyy =np.meshgrid(xx,yy)
-        # fig = plt.figure()
-        # ax = plt.axes(projection ='3d')
-        # ax.plot_surface(yyy,xxx,Notchfilter)
-        # plt.show()
-
-        return result4
-    ```
-
-* Restoration
-  * Noise Function
+* Affine Transform
+  
+  * Bilinear interpolation
   ```python
-     def Bluring_Noise(img,k):
+  def backward_bilinear_x(img,c):
+      Original = np.array(img,dtype='int64')
+      transformed = np.zeros(shape=(int((Original.shape[0])),int(c*(Original.shape[1]))),dtype='int64')
+      cx = (c*Original.shape[1]-1)/(Original.shape[1]-1)
+      zoom_reversematrix = np.array([[1/cx,0,0],[0,1,0],[0,0,1]])
 
-       Noisefilter = np.zeros_like(img)
-       Noisefilter = np.array(Noisefilter, dtype=float)
-       a, b = Noisefilter.shape
+      for x,y,element in enumerate2(transformed):
+       tuple= (x,y,element)
+       array=np.asarray(tuple)
+       result=array.dot(zoom_reversematrix)
+       x1=int(result[0])
+       y1=int(result[1])
+       x2=x1+1
+       a=result[0].is_integer()
 
-       for x in range(0, b):
-           for y in range(0, a):
-                   Noisefilter[y, x] = exp((-1)*k*((y-b/2)**2 +(x-a/2)**2)**(5/6))
+       if a:
+           result[2] = Original[y1,x1]
+           transformed[y,x] = result[2]
 
-       img = Fourier_transform(img)
-       result = img * Noisefilter
-       result1 = np.fft.ifft2(result)
-       result2 = np.absolute(result1).astype(np.uint8)
+       else :
+           result[2] = (Original[y1,x2]-Original[y1,x1])*(result[0]-x1)+Original[y1,x1]
+           transformed[y,x] = int(result[2])
 
-       return result2
+      result = np.array(transformed, dtype=np.uint8)
+      return result
+
+  def backward_bilinear_y(img,c):
+      Original = np.array(img,dtype='int64')
+      transformed = np.zeros(shape=(int(c*(Original.shape[0])),int((Original.shape[1]))),dtype='int64')
+
+      cy = (c*Original.shape[0]-1)/(Original.shape[0]-1)
+      zoom_reversematrix = np.array([[1,0,0],[0,1/cy,0],[0,0,1]])
+      for x,y,element in enumerate2(transformed):
+       tuple= (x,y,element)
+       array=np.asarray(tuple)
+       result = array.dot(zoom_reversematrix)
+       x1=int(result[0])
+       y1=int(result[1])
+       y2=y1+1
+       a=result[1].is_integer()
+
+       if a:
+           result[2] = Original[y1,x1]
+           transformed[y,x] = result[2]
+
+       else :
+           result[2] = (Original[y2,x1]-Original[y1,x1])*(result[1]-y1)+Original[y1,x1]
+           transformed[y,x] = result[2]
+
+      result = np.array(transformed, dtype=np.uint8)
+      return result
+  ```    
+  * Nearest interpolation
+  ```python
+  def backward_nearest_x(img,c):
+      Original = np.array(img,dtype='int64')
+      transformed = np.zeros(shape=(int((Original.shape[0])),int(c*(Original.shape[1]))),dtype='int64')
+      cx = (c*Original.shape[1]-1)/(Original.shape[1]-1)
+      zoom_reversematrix = np.array([[1/cx,0,0],[0,1,0],[0,0,1]])
+
+      for x,y,element in enumerate2(transformed):
+       tuple= (x,y,element)
+       array=np.asarray(tuple)
+       result=array.dot(zoom_reversematrix)
+       x1=int(result[0])
+       y1=int(result[1])
+       x2=x1+1
+       a=result[0].is_integer()
+
+       if a:
+           result[2] = Original[y1,x1]
+           transformed[y,x] = result[2]
+
+       else :
+          if result[0]-x1 > 0.5:
+           result[2] = Original[y1,x2]
+           transformed[y,x] = int(result[2])
+          else :
+           result[2] = Original[y1,x1]
+           transformed[y,x] = int(result[2])
+
+      result = np.array(transformed, dtype=np.uint8)
+      return result
+
+  def backward_nearest_y(img,c):
+      Original = np.array(img,dtype='int64')
+
+      transformed = np.zeros(shape=(int(c*(Original.shape[0])),int((Original.shape[1]))),dtype='int64')
+
+      cy = (c*Original.shape[0]-1)/(Original.shape[0]-1)
+      zoom_reversematrix = np.array([[1,0,0],[0,1/cy,0],[0,0,1]])
+      for x,y,element in enumerate2(transformed):
+       tuple= (x,y,element)
+       array=np.asarray(tuple)
+       #print(array)
+       result = array.dot(zoom_reversematrix)
+       #print(result)
+       x1=int(result[0])
+       y1=int(result[1])
+       y2=y1+1
+       a=result[1].is_integer()
+
+       if a:
+           result[2] = Original[y1,x1]
+           transformed[y,x] = result[2]
+
+       else :
+           if result[1] - y1 > 0.5:
+               result[2] = Original[y2, x1]
+               transformed[y, x] = int(result[2])
+           else:
+               result[2] = Original[y1, x1]
+               transformed[y, x] = int(result[2])
+               transformed[y,x] = result[2]
+
+      result = np.array(transformed, dtype=np.uint8)
+      return result
+  ``` 
+  
+  * Rotation
+  
+  ```python
+  def rotate_image(img,theta):
+
+    img_height, img_width = img.shape
+    corner_x, corner_y = rotatecoordination([0,img_width,img_width,0],[0,0,img_height,img_height],theta)
+    destination_width, destination_height = (int(np.ceil(c.max()-c.min())) for c in (corner_x, corner_y))
+    destination_x, destination_y = np.meshgrid(np.arange(destination_width), np.arange(destination_height))
+    sx, sy = rotatecoordination(destination_x + corner_x.min(), destination_y + corner_y.min(), -theta)
+    sx, sy = sx.round().astype(int), sy.round().astype(int)
+    valid = (0 <= sx) & (sx < img_width) & (0 <= sy) & (sy < img_height)
+    transformed=np.zeros(shape=(destination_height, destination_width), dtype=img.dtype)
+    transformed[destination_y[valid], destination_x[valid]] = img[sy[valid], sx[valid]]
+    transformed[destination_y[~valid], destination_x[~valid]]=0
+
+    return transformed
   ```
-  * Spatial domain restoration
-    * Median filter
-    ![median_filter](https://user-images.githubusercontent.com/62092317/106533692-fe5b4b00-6535-11eb-8169-186ddca92125.PNG)
-    ```python
-    def Median_filter(img,c):
+  
+* Color Transform
+  
+  * RGB_to_HIS
+   ```python 
+   def RGB_to_HIS(img):
+    with np.errstate(divide='ignore', invalid='ignore'):
+        zmax = 255
+        bgr = np.float32(img) / 255
+        R= bgr[:, :, 2]
+        G= bgr[:, :, 1]
+        B= bgr[:, :, 0]
 
-        zp = int((c-1)/2)
-        y, x = img.shape
-        image_zero_padding = np.zeros((y + c- 1, x + c - 1))
-        for i in range(y):
-            for j in range(x):
-                image_zero_padding[i+zp][j+zp] = img[i][j]
+        a = (0.5) * np.add(np.subtract(R, G), np.subtract(R, B))
+        b = np.sqrt(np.add(np.power(np.subtract(R, G), 2), np.multiply(np.subtract(R, B), np.subtract(G, B))))
+        tetha = np.arccos(np.divide(a, b, out=np.zeros_like(a), where=b != 0))
+        H = (180 / math.pi) * tetha
+        H[B > G] = 360 - H[B > G]
 
-        image_zero_padding = np.array(image_zero_padding, dtype=np.uint8)
+        a = 3 * np.minimum(np.minimum(R, G), B)
+        b = np.add(np.add(R, G), B)
+        S = np.subtract(1, np.divide(a, b, out=np.ones_like(a), where=b != 0))
 
-        filter = np.zeros((c, c))
-        result = np.zeros((y, x))
-
-        for i in range(y):
-            for j in range(x):
-                filter = image_zero_padding[i :i+2*zp+1, j:j+2*zp+1]
-                result[i][j] = np.median(filter)
-
-        result = np.array(result, dtype=np.uint8)
-
-    return result
-    ```
-    * Min-max filter
-      * Min filter
-      ![min_filter](https://user-images.githubusercontent.com/62092317/106533697-ff8c7800-6535-11eb-81a3-d202f0a5bc86.PNG)
-      ```python
-      def Min_filter(img,c):
-          zp = int((c-1)/2)
-          y, x = img.shape
-          image_zero_padding = np.zeros((y + c- 1, x + c - 1))
-          for i in range(y):
-              for j in range(x):
-                  image_zero_padding[i+zp][j+zp] = img[i][j]
-
-          image_zero_padding = np.array(image_zero_padding, dtype=np.uint8)
-
-          filter = np.zeros((c, c))
-          result = np.zeros((y, x))
-
-          for i in range(y):
-              for j in range(x):
-                  filter = image_zero_padding[i :i+2*zp+1, j:j+2*zp+1]
-                  result[i][j] = np.amin(filter)
-
-          result = np.array(result, dtype=np.uint8)
-
-          return result
-      ```
-      * Max filter
-      ![max_filter](https://user-images.githubusercontent.com/62092317/106533690-fdc2b480-6535-11eb-944b-4eefceba55c6.PNG)
-      ```python
-      def Max_filter(img,c):
-          zp = int((c-1)/2)
-          y, x = img.shape
-          image_zero_padding = np.zeros((y + c- 1, x + c - 1))
-          for i in range(y):
-              for j in range(x):
-                  image_zero_padding[i+zp][j+zp] = img[i][j]
-
-          image_zero_padding = np.array(image_zero_padding, dtype=np.uint8)
-
-          filter = np.zeros((c, c))
-          result = np.zeros((y, x))
-
-          for i in range(y):
-              for j in range(x):
-                  filter = image_zero_padding[i :i+2*zp+1, j:j+2*zp+1]
-                  result[i][j] = np.amax(filter)
-
-          result = np.array(result, dtype=np.uint8)
-
-          return result
-      ```
-    * Midpoint filter
-    ![mid_point_filter](https://user-images.githubusercontent.com/62092317/106533693-fef3e180-6535-11eb-8516-6b490d66e4a2.PNG)
-    ```python
-    def Midpoint_filter(img,c):
-        zp = int((c - 1) / 2)
-        y, x = img.shape
-        image_zero_padding = np.zeros((y + c - 1, x + c - 1))
-        for i in range(y):
-            for j in range(x):
-                image_zero_padding[i + zp][j + zp] = img[i][j]
-
-        image_zero_padding = np.array(image_zero_padding, dtype=np.uint8)
-
-        filter = np.zeros((c, c))
-        result = np.zeros((y, x))
-
-        for i in range(y):
-            for j in range(x):
-                filter = image_zero_padding[i:i + 2 * zp + 1, j:j + 2 * zp + 1]
-                result[i][j] = (1/2)*np.amax(filter)+(1/2)*np.amin(filter)
-                a= np.amax(filter)
-                b= np.amin(filter)
-        result = np.array(result, dtype=np.uint8)
+        I = (1 / 3) * np.add(np.add(R, G), B)
+        stack = np.dstack((H, zmax * S, np.round(zmax * I)))
+        result= np.array(stack,dtype=np.uint8)
+        return result
+   ```
+  * RGB_to_Ycbcr
+   
+   ```python
+   def RGB_to_Ycbcr(image):
+        img=(image.astype(float)/255)
+        YCbCr_img = np.empty((img.shape[0], img.shape[1], 3), float)
+        Y = np.empty([img.shape[0], img.shape[1]], dtype=float)
+        Cb = np.empty([img.shape[0], img.shape[1]], dtype=float)
+        Cr = np.empty([img.shape[0], img.shape[1]], dtype=float)
+        for i in range(image.shape[0]):
+            for j in range(image.shape[1]):
+                Y[i, j] = (0.299) * (img[i, j][2]) + (0.587) * (img[i, j][1]) + (0.114) * (img[i, j][0])
+                Cb[i, j] = (-0.1687) * (img[i, j][2]) + (-0.3313) * (img[i, j][1]) + (0.5) * (img[i, j][0])
+                Cr[i, j] = (0.5) * (img[i, j][2]) + (-0.4187) * (img[i, j][1]) + (-0.0813) * (img[i, j][0])
+        YCbCr_img[..., 0]=Cr*255
+        YCbCr_img[..., 1]=Cb*255
+        YCbCr_img[..., 2]=Y*255
+        result = np.array(YCbCr_img, dtype=np.uint8)
 
         return result
-    ```
-    * Alpha-trimmed mean filter
-    ![Alpha_trimmed_mean_filter](https://user-images.githubusercontent.com/62092317/106533743-087d4980-6536-11eb-8add-b9f638ae5ac7.PNG)
-    ```python
-    def Alpha_trimmed_mean_filter(img,c,a):
+   ```
+   
+   * Ycbcr_to_RGB
+   
+   ```python
+   def Ycrbr_to_RGB(image):
+    img = (image.astype(float)/255)
+    RGB_img = np.empty((img.shape[0], img.shape[1], 3), float)
+    r = np.empty([img.shape[0],img.shape[1]], dtype = float)
+    g = np.empty([img.shape[0],img.shape[1]], dtype = float)
+    b = np.empty([img.shape[0],img.shape[1]], dtype = float)
+    for i in range(image.shape[0]):
+        for j in range(image.shape[1]):
+            r[i,j] = (1)*(img[i,j][2]) + (0)*(img[i,j][1]) + (1.402)*(img[i,j][0])
+            g[i,j] = (1)*(img[i,j][2]) + (-0.34414)*(img[i,j][1]) + (-0.71414)*(img[i,j][0])
+            b[i,j] = (1)*(img[i,j][2]) + (1.772)*(img[i,j][1]) + (0)*(img[i,j][0])
+    RGB_img[...,0] = b*255
+    RGB_img[...,1] = g*255
+    RGB_img[...,2] = r*255
+    return RGB_img
+   ```
+   
+   * RGB_to_CMY
 
-        zp = int((c - 1) / 2)
-        y, x = img.shape
-        image_zero_padding = np.zeros((y + c - 1, x + c - 1))
-        for i in range(y):
-            for j in range(x):
-                image_zero_padding[i + zp][j + zp] = img[i][j]
-
-        image_zero_padding = np.array(image_zero_padding, dtype=np.uint8)
-
-        filter = np.zeros((c, c))
-        result = np.zeros((y, x))
-
-        for i in range(y):
-            for j in range(x):
-                filter = image_zero_padding[i:i + 2 * zp + 1, j:j + 2 * zp + 1]
-                ordered_filter = np.array(filter).reshape(c**2,)
-                ordered_filter = np.sort(ordered_filter)
-                ordered_trimmed_filter =  ordered_filter[a:c**2-a]
-                result[i][j]=(1/(c**2 - 2*a))*np.sum(ordered_trimmed_filter)
-
-        result = np.array(result, dtype=np.uint8)
-
-        return result
-    ```
-    * Adaptive median fitler
-    ![Adaptive_median_filter](https://user-images.githubusercontent.com/62092317/106533738-074c1c80-6536-11eb-9fc9-58109823a3ca.PNG)
-    ```python
-    def Adaptive_median_filter(img):
-        Smax = 7
-        zpm = 3
-        y, x = img.shape
-        image_zero_padding = np.zeros((y + Smax - 1, x + Smax - 1))
-        for i in range(y):
-            for j in range(x):
-                image_zero_padding[i+zpm][j+zpm] = img[i][j]
-
-        image_zero_padding = np.array(image_zero_padding,dtype =np.uint8)
-
-        filter = np.zeros((3,3))
-        filter1 = np.zeros((5,5))
-        filter2 = np.zeros((7,7))
-
-        result = np.zeros((y, x))
-        for i in range(y):
-            for j in range(x):
-                filter = image_zero_padding[i+2:i+5,j+2:j+5]
-                if (np.median(filter) - np.amin(filter)) > 0 and (np.median(filter) - np.amax(filter)) < 0:
-                    if image_zero_padding[i + 3][j + 3] - np.amin(filter) > 0 and image_zero_padding[i + 3][j + 3] - np.amax(filter) < 0:
-                        result[i][j] = image_zero_padding[i + 3][j + 3]
-                    else:
-                        result[i][j] = np.median(filter)
-                else:
-                    filter1 =image_zero_padding[i+1:i+6,j+1:j+6]
-                    if (np.median(filter1)-np.amin(filter1))>0 and (np.median(filter1)-np.amax(filter1)) < 0 :
-                        if image_zero_padding[i+3][j+3] - np.amin(filter1) >0 and image_zero_padding[i+3][j+3] -np.amax(filter1) <0:
-                            result[i][j] = image_zero_padding[i+3][j+3]
-                        else :
-                            result[i][j] = np.median(filter1)
-                    else :
-                        filter2 = image_zero_padding[i:i+7,j:j+7]
-                        if (np.median(filter2) - np.amin(filter2)) > 0 and (np.median(filter2) - np.amax(filter2)) < 0:
-                            if image_zero_padding[i + 3][j + 3] - np.amin(filter2) > 0 and image_zero_padding[i + 3][j + 3] - np.amax(filter2) < 0:
-                                result[i][j] = image_zero_padding[i + 3][j + 3]
-                            else:
-                                result[i][j] = np.median(filter2)
-
-
-        result = np.array(result,dtype=np.uint8)
+   ```python
+   def RGB_to_CMY(image):
+        img = (image.astype(float) / 255)
+        CMY_img = np.empty((img.shape[0], img.shape[1], 3), float)
+        C = np.empty([img.shape[0], img.shape[1]], dtype=float)
+        M = np.empty([img.shape[0], img.shape[1]], dtype=float)
+        Y = np.empty([img.shape[0], img.shape[1]], dtype=float)
+        for i in range(image.shape[0]):
+            for j in range(image.shape[1]):
+                C[i, j] =1- (img[i, j][2])
+                M[i, j] =1- (img[i, j][1])
+                Y[i, j] =1- (img[i, j][0])
+        CMY_img[..., 0] = C * 255
+        CMY_img[..., 1] = M * 255
+        CMY_img[..., 2] = Y * 255
+        result = np.array(CMY_img, dtype=np.uint8)
 
         return result
-    ```
-  * Frequency domain restoration
-    * Inverse filtering
-    ![Inverse_filter](https://user-images.githubusercontent.com/62092317/106533684-fc918780-6535-11eb-83a5-842641c1fdee.PNG)
-    ```python
-    def Inverse_filter(img,k):
-        Inverse_filter = np.zeros_like(img)
-        Inverse_filter = np.array(Inverse_filter, dtype=float)
-        a, b = Inverse_filter.shape
-
-        for x in range(0, b):
-            for y in range(0, a):
-                Inverse_filter[y,x] =1 /(exp((-1)*k*((y-b/2)**2+(x-a/2)**2)**(5/6)))
-
-        img = Fourier_transform(img)
-        result = img * Inverse_filter
-        result1 = np.fft.ifft2(result)
-        result2 = np.absolute(result1)
-
-        max = np.amax(result2)
-        result3 = (255 / max ) * result2
-        result4 = np.array(result3, dtype=np.uint8)
-
-        return result4
-        
-    def Inverse_with_Butterworth_filter(img,k,r):
-        Inverse_filter = np.zeros_like(img)
-        Inverse_filter = np.array(Inverse_filter, dtype=float)
-        a, b = Inverse_filter.shape
-
-        for x in range(0, b):
-            for y in range(0, a):
-                Inverse_filter[y, x] =1 /(exp((-1)*k* ((y - b / 2) ** 2 + (x - a / 2) ** 2) ** (5 / 6)))
-
-        Lowpassfilter = np.zeros_like(img)
-        Lowpassfilter = np.array(Lowpassfilter,dtype=float)
-        c,d = Lowpassfilter.shape
-
-        for x in range(0,d):
-            for y in range(0,c):
-                    distance = sqrt((x-d/2)**2 + (y-c/2)**2)
-                    Lowpassfilter[y,x] = 1/(1+(distance/r)**(2*10))
-
-        img = Fourier_transform(img)
-        result = img * Inverse_filter * Lowpassfilter
-        result1 = np.fft.ifft2(result)
-        result2 = np.absolute(result1)
-
-        max = np.amax(result2)
-        result3 = (255 / max ) * result2
-        result4 = np.array(result3, dtype=np.uint8)
-
-        return result4
-    ```
-    * Wiener filtering
-    ![Wiener_filter](https://user-images.githubusercontent.com/62092317/106533732-061aef80-6536-11eb-8ad8-fb6a4dee5434.PNG)
-    ```python
-    def Wiener_filter(img,k,K):
-        Wiener_filter = np.zeros_like(img)
-        Noise_filter = np.zeros_like(img)
-        Noise_filter = np.array(Noise_filter, dtype=float)
-
-        a, b = Noise_filter.shape
-
-        for x in range(0, b):
-            for y in range(0, a):
-                Noise_filter[y, x] = (exp((-1)*k* ((y - b / 2) ** 2 + (x - a / 2) ** 2) ** (5 / 6)))
-        Noise_abs = np.absolute(Noise_filter)
-        Noise_abs_square  =np.square(Noise_abs)
-
-        Wiener_filter = (1/Noise_filter)*(Noise_abs_square/(Noise_abs_square+K))
-        img = Fourier_transform(img)
-        result = img * Wiener_filter
-        result1 = np.fft.ifft2(result)
-        result2 = np.absolute(result1)
-
-        max = np.amax(result2)
-        result3 = (255 / max ) * result2
-        result4 = np.array(result3, dtype=np.uint8)
-
-        return result4
-        
-    def Wiener_with_Butterworth_filter(img,k,K,r):
-        Wiener_filter = np.zeros_like(img)
-        Noise_filter = np.zeros_like(img)
-        Noise_filter = np.array(Noise_filter, dtype=float)
-
-        a, b = Noise_filter.shape
-
-        for x in range(0, b):
-            for y in range(0, a):
-                Noise_filter[y, x] = (exp((-1) * k * ((y - b / 2) ** 2 + (x - a / 2) ** 2) ** (5 / 6)))
-        Noise_abs = np.absolute(Noise_filter)
-        Noise_abs_square = np.square(Noise_abs)
-
-        Wiener_filter = (1 / Noise_filter) * (Noise_abs_square / (Noise_abs_square + K))
-
-        Lowpassfilter = np.zeros_like(img)
-        Lowpassfilter = np.array(Lowpassfilter,dtype=float)
-        c,d = Lowpassfilter.shape
-
-        for x in range(0,d):
-            for y in range(0,c):
-                    distance = sqrt((x-d/2)**2 + (y-c/2)**2)
-                    Lowpassfilter[y,x] = 1/(1+(distance/r)**(2*10))
-
-        img = Fourier_transform(img)
-        result = img * Wiener_filter * Lowpassfilter
-        result1 = np.fft.ifft2(result)
-        result2 = np.absolute(result1)
-
-        max = np.amax(result2)
-        result3 = (255 / max ) * result2
-        result4 = np.array(result3, dtype=np.uint8)
-
-        return result4
-    ```
-#See details in [HERE](https://github.com/SeongSuKim95/DIP_Various_Filter/blob/master/Spatial_and_Frequency_filter.pdf)
+   ```
