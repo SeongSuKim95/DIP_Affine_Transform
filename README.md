@@ -3,7 +3,7 @@
 
 * Intensity Transformation
   * Negative transformation
-    ![Negative_transform](https://user-images.githubusercontent.com/62092317/108153340-50979100-711e-11eb-9fa6-cce9bf82dcfe.png)
+  ![Negative_transform](https://user-images.githubusercontent.com/62092317/108153340-50979100-711e-11eb-9fa6-cce9bf82dcfe.png)
      ```python
      def NegativeTransformation(img):
          negative_transform = np.array(255-img,dtype='uint8')
